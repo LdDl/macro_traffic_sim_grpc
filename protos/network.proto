@@ -1,0 +1,144 @@
+syntax = "proto3";
+package macro_traffic_sim;
+option go_package = "github.com/LdDl/macro_traffic_sim_grpc/clients/go;macrotraffic";
+
+import "uuid.proto";
+
+// Meso node in the transport network
+message Node {
+    // Unique node identifier
+    int64 id = 1;
+    // WGS84 longitude
+    double longitude = 2;
+    // WGS84 latitude
+    double latitude = 3;
+    // Zone ID if this node is a zone centroid (>= 0). -1 otherwise.
+    int64 zone_id = 4;
+    // Reference to parent macro node ID. -1 if not applicable.
+    int64 macro_node_id = 5;
+    // Reference to parent macro link ID. -1 if mid-link segment node.
+    int64 macro_link_id = 6;
+}
+
+// Link type classification (from OSM highway tags)
+enum LinkType {
+    LINK_TYPE_UNDEFINED = 0;
+    LINK_TYPE_MOTORWAY = 1;
+    LINK_TYPE_TRUNK = 2;
+    LINK_TYPE_PRIMARY = 3;
+    LINK_TYPE_SECONDARY = 4;
+    LINK_TYPE_TERTIARY = 5;
+    LINK_TYPE_RESIDENTIAL = 6;
+    LINK_TYPE_LIVING_STREET = 7;
+    LINK_TYPE_SERVICE = 8;
+    LINK_TYPE_CYCLEWAY = 9;
+    LINK_TYPE_FOOTWAY = 10;
+    LINK_TYPE_TRACK = 11;
+    LINK_TYPE_UNCLASSIFIED = 12;
+    LINK_TYPE_CONNECTOR = 13;
+    LINK_TYPE_RAILWAY = 14;
+    LINK_TYPE_AEROWAY = 15;
+}
+
+// Meso link (directed edge) in the transport network
+message Link {
+    // Unique link identifier
+    int64 id = 1;
+    // Source node ID
+    int64 source_node_id = 2;
+    // Target node ID
+    int64 target_node_id = 3;
+    // Length in meters
+    double length_meters = 4;
+    // Free-flow speed (km/h)
+    double free_speed = 5;
+    // Capacity (vehicles per hour per lane)
+    double capacity = 6;
+    // Number of lanes
+    int32 lanes = 7;
+    // Road type
+    LinkType link_type = 8;
+    // Whether this is a connection (turn) link
+    bool is_connection = 9;
+    // Reference to parent macro link. -1 if not applicable.
+    int64 macro_link_id = 10;
+    // Reference to movement ID. -1 if not a connection link.
+    int64 movement_id = 11;
+}
+
+// Zone (TAZ) with socioeconomic attributes
+message Zone {
+    // Unique zone identifier
+    int64 id = 1;
+    // Zone name or description
+    string name = 2;
+    // Total population
+    double population = 3;
+    // Total employment (jobs)
+    double employment = 4;
+    // Number of households
+    double households = 5;
+    // Average household income
+    double avg_income = 6;
+    // Area in square kilometers
+    double area_sq_km = 7;
+}
+
+// Network data chunk (nodes + links). Streamed in batches of up to 10000 entities.
+message NetworkChunk {
+    // Session identifier
+    UUIDv4 session_id = 1;
+    // Node data batch
+    repeated Node nodes = 2;
+    // Link data batch
+    repeated Link links = 3;
+}
+
+// Server response for network ingest
+message NetworkChunkResponse {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+    // Cumulative counts
+    uint32 nodes_received = 3;
+    uint32 links_received = 4;
+}
+
+// Zone data chunk. Streamed in batches.
+message ZoneChunk {
+    // Session identifier
+    UUIDv4 session_id = 1;
+    // Zone data batch
+    repeated Zone zones = 2;
+}
+
+// Server response for zone ingest
+message ZoneChunkResponse {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+    // Cumulative count
+    uint32 zones_received = 3;
+}
+
+// OD matrix data chunk. First chunk must include zone_ids.
+message OdMatrixChunk {
+    // Session identifier
+    UUIDv4 session_id = 1;
+    // Ordered zone IDs (sent once in first chunk)
+    repeated int64 zone_ids = 2;
+    // Row-major flat data (chunked across messages)
+    repeated double data = 3;
+}
+
+// Server response for OD matrix ingest
+message OdMatrixChunkResponse {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+    // Number of cells received so far
+    uint64 cells_received = 3;
+}

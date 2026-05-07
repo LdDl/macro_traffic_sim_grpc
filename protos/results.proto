@@ -1,0 +1,107 @@
+syntax = "proto3";
+package macro_traffic_sim;
+option go_package = "github.com/LdDl/macro_traffic_sim_grpc/clients/go;macrotraffic";
+
+import "uuid.proto";
+
+// Request link volumes for a specific time period
+message LinkVolumesRequest {
+    // Session identifier
+    UUIDv4 session_id = 1;
+    // Period index (0-based). 0 for single-period runs.
+    uint32 period_index = 2;
+}
+
+// Single link result
+message LinkVolume {
+    // Link ID
+    int64 link_id = 1;
+    // Volume (vehicles per hour)
+    double volume = 2;
+    // Congested travel time (hours)
+    double travel_time = 3;
+    // Volume-to-capacity ratio
+    double v_over_c = 4;
+}
+
+// Chunk of link volume results
+message LinkVolumesChunk {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+    // Period index
+    uint32 period_index = 3;
+    // Link volume data
+    repeated LinkVolume volumes = 4;
+}
+
+// Request a skim matrix
+message SkimRequest {
+    // Session identifier
+    UUIDv4 session_id = 1;
+    // Mode: "auto", "bike", "walk"
+    string mode = 2;
+    // Skim type: "time", "distance", "cost"
+    string skim_type = 3;
+}
+
+// Chunk of skim matrix data (row-major, chunked)
+message SkimMatrixChunk {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+    // Zone IDs (sent once in first chunk)
+    repeated int64 zone_ids = 3;
+    // Row-major flat data
+    repeated double data = 4;
+}
+
+// Request OD matrix result
+message OdResultRequest {
+    // Session identifier
+    UUIDv4 session_id = 1;
+    // Mode: "auto", "bike", "walk", or "" for total
+    string mode = 2;
+}
+
+// Chunk of OD matrix result
+message OdResultChunk {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+    // Zone IDs (sent once in first chunk)
+    repeated int64 zone_ids = 3;
+    // Row-major flat data
+    repeated double data = 4;
+}
+
+// Assignment convergence info
+message AssignmentInfo {
+    // Number of iterations performed
+    uint32 iterations = 1;
+    // Final relative gap
+    double relative_gap = 2;
+    // Whether the algorithm converged
+    bool converged = 3;
+}
+
+// Request assignment summary
+message AssignmentInfoRequest {
+    // Session identifier
+    UUIDv4 session_id = 1;
+    // Period index (0-based)
+    uint32 period_index = 2;
+}
+
+// Response with assignment summary
+message AssignmentInfoResponse {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+    // Assignment convergence info
+    AssignmentInfo info = 3;
+}

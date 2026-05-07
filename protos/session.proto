@@ -1,0 +1,53 @@
+syntax = "proto3";
+package macro_traffic_sim;
+option go_package = "github.com/LdDl/macro_traffic_sim_grpc/clients/go;macrotraffic";
+
+import "uuid.proto";
+
+// Session creation request (empty; session starts with default state)
+message NewSessionRequest {}
+
+// Server response for new session creation
+message NewSessionResponse {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+    // Session identifier (UUIDv4)
+    UUIDv4 session_id = 3;
+}
+
+// Session identifier wrapper
+message SessionId {
+    UUIDv4 value = 1;
+}
+
+// Session state description
+message InfoSessionResponse {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+    // Session identifier
+    UUIDv4 session_id = 3;
+    // Current session state
+    string state = 4; // "empty", "network_loaded", "configured", "running", "completed"
+    // Data presence flags
+    bool has_network = 5;
+    bool has_zones = 6;
+    bool has_od_matrix = 7;
+    bool has_config = 8;
+    bool has_results = 9;
+    // Network stats (populated after PushNetwork)
+    uint32 num_nodes = 10;
+    uint32 num_links = 11;
+    uint32 num_zones = 12;
+}
+
+// Server response for session deletion
+message DeleteSessionResponse {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+}

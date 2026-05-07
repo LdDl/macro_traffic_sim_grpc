@@ -1,0 +1,149 @@
+syntax = "proto3";
+package macro_traffic_sim;
+option go_package = "github.com/LdDl/macro_traffic_sim_grpc/clients/go;macrotraffic";
+
+import "uuid.proto";
+
+// Assignment algorithm selection
+enum AssignmentMethod {
+    ASSIGNMENT_FRANK_WOLFE = 0;
+    ASSIGNMENT_MSA = 1;
+    ASSIGNMENT_GRADIENT_PROJECTION = 2;
+}
+
+// Impedance function type for trip distribution
+enum ImpedanceFunctionType {
+    IMPEDANCE_EXPONENTIAL = 0;
+    IMPEDANCE_POWER = 1;
+    IMPEDANCE_COMBINED = 2;
+}
+
+// Trip generation method
+enum TripGenerationMethod {
+    TRIP_GEN_REGRESSION = 0;
+    TRIP_GEN_CROSS_CLASSIFICATION = 1;
+}
+
+// BPR volume-delay function parameters
+// t = t0 * (1 + alpha * (V/C)^beta)
+message BprConfig {
+    // Scale of delay at capacity. Default 0.15.
+    double alpha = 1;
+    // Non-linearity exponent. Default 4.0.
+    double beta = 2;
+}
+
+// Assignment convergence parameters
+message AssignmentConvergence {
+    // Maximum number of iterations. Default 100.
+    uint32 max_iterations = 1;
+    // Relative gap threshold. Default 0.001.
+    double convergence_gap = 2;
+}
+
+// Furness (IPF) balancing parameters
+message FurnessConfig {
+    // Maximum iterations. Default 100.
+    uint32 max_iterations = 1;
+    // Row/column sum tolerance. Default 0.001.
+    double tolerance = 2;
+}
+
+// Impedance (deterrence) function for gravity model
+message ImpedanceFunction {
+    // Function type
+    ImpedanceFunctionType type = 1;
+    // Power exponent (for POWER and COMBINED). Default 2.0.
+    double alpha = 2;
+    // Exponential decay (for EXPONENTIAL and COMBINED). Default 0.1.
+    double beta = 3;
+}
+
+// Regression coefficients for trip generation
+// value = intercept + pop*pop_coeff + emp*emp_coeff + hh*hh_coeff + income*income_coeff
+message RegressionCoeffs {
+    double intercept = 1;
+    double pop_coeff = 2;
+    double emp_coeff = 3;
+    double hh_coeff = 4;
+    double income_coeff = 5;
+}
+
+// Trip generation configuration
+message TripGenerationConfig {
+    // Generation method
+    TripGenerationMethod method = 1;
+    // Regression: production coefficients
+    RegressionCoeffs production_coeffs = 2;
+    // Regression: attraction coefficients
+    RegressionCoeffs attraction_coeffs = 3;
+    // Cross-classification: attraction rate per employee
+    double attraction_rate_per_employee = 4;
+    // Cross-classification: household size category thresholds
+    repeated double hh_size_thresholds = 5;
+    // Cross-classification: income category thresholds
+    repeated double income_thresholds = 6;
+    // Cross-classification: production rates by category key "row_col" -> rate
+    map<string, double> production_rates = 7;
+}
+
+// Mode utility coefficients
+// V = asc + coeff_time * time + coeff_distance * distance + coeff_cost * cost
+message ModeUtility {
+    // Mode name: "auto", "bike", "walk"
+    string mode = 1;
+    // Alternative-specific constant
+    double asc = 2;
+    // Travel time coefficient (typically negative)
+    double coeff_time = 3;
+    // Travel distance coefficient (typically negative)
+    double coeff_distance = 4;
+    // Monetary cost coefficient (typically negative)
+    double coeff_cost = 5;
+}
+
+// Time period for multi-period analysis
+message TimePeriod {
+    // Period name (e.g. "AM peak")
+    string name = 1;
+    // Start hour (e.g. 7.0 = 07:00)
+    double start_hour = 2;
+    // End hour (e.g. 10.0 = 10:00)
+    double end_hour = 3;
+    // Demand multiplier for this period (1.0 = full OD matrix)
+    double demand_factor = 4;
+}
+
+// Complete model configuration request
+message ModelConfigRequest {
+    // Session identifier
+    UUIDv4 session_id = 1;
+    // Assignment algorithm
+    AssignmentMethod assignment_method = 2;
+    // BPR parameters
+    BprConfig bpr = 3;
+    // Assignment convergence settings
+    AssignmentConvergence assignment = 4;
+    // Furness balancing settings
+    FurnessConfig furness = 5;
+    // Number of feedback loop iterations (min 1)
+    uint32 feedback_iterations = 6;
+    // GP step scale (only for GRADIENT_PROJECTION method)
+    double gp_step_scale = 7;
+    // Impedance function for gravity model
+    ImpedanceFunction impedance = 8;
+    // Trip generation parameters
+    TripGenerationConfig trip_generation = 9;
+    // Mode choice utility functions (one per mode)
+    repeated ModeUtility mode_utilities = 10;
+    // Time periods for multi-period analysis (empty = single period)
+    repeated TimePeriod time_periods = 11;
+}
+
+// Server response for configuration
+message ModelConfigResponse {
+    // Response code (0 = OK)
+    uint32 code = 1;
+    // Human-readable message
+    string text = 2;
+}

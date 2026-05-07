@@ -1,0 +1,34 @@
+syntax = "proto3";
+package macro_traffic_sim;
+option go_package = "github.com/LdDl/macro_traffic_sim_grpc/clients/go;macrotraffic";
+
+import "uuid.proto";
+import "session.proto";
+import "network.proto";
+import "config.proto";
+import "run.proto";
+import "results.proto";
+
+service MacroService {
+    // Session management
+    rpc NewSession (NewSessionRequest) returns (NewSessionResponse) {}
+    rpc InfoSession (SessionId) returns (InfoSessionResponse) {}
+    rpc DeleteSession (SessionId) returns (DeleteSessionResponse) {}
+
+    // Network data loading (bidirectional streaming for large networks)
+    rpc PushNetwork (stream NetworkChunk) returns (stream NetworkChunkResponse) {}
+    rpc PushZones (stream ZoneChunk) returns (stream ZoneChunkResponse) {}
+    rpc PushOdMatrix (stream OdMatrixChunk) returns (stream OdMatrixChunkResponse) {}
+
+    // Model configuration
+    rpc SetModelConfig (ModelConfigRequest) returns (ModelConfigResponse) {}
+
+    // Pipeline execution (server-streaming for progress)
+    rpc RunPipeline (RunPipelineRequest) returns (stream RunPipelineProgress) {}
+
+    // Results retrieval (server-streaming for large data)
+    rpc GetLinkVolumes (LinkVolumesRequest) returns (stream LinkVolumesChunk) {}
+    rpc GetSkimMatrix (SkimRequest) returns (stream SkimMatrixChunk) {}
+    rpc GetOdResult (OdResultRequest) returns (stream OdResultChunk) {}
+    rpc GetAssignmentInfo (AssignmentInfoRequest) returns (AssignmentInfoResponse) {}
+}

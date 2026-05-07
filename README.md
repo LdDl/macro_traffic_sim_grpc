@@ -1,136 +1,185 @@
-# macro_traffic_sim_grpc
+# macro_traffic_sim gRPC server
 
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Crates.io](https://img.shields.io/crates/v/macro_traffic_sim.svg)](https://crates.io/crates/macro_traffic_sim)
+[![Documentation](https://docs.rs/macro_traffic_sim/badge.svg)](https://docs.rs/macro_traffic_sim)
+[![License](https://img.shields.io/crates/l/macro_traffic_sim.svg)](https://github.com/LdDl/macro_traffic_sim_grpc/blob/master/LICENSE)
 
-gRPC interface for macroscopic traffic simulation via 4-step demand model.
-
-This crate wraps [`macro_traffic_sim_core`](https://github.com/LdDl/macro_traffic_sim_core) with a [tonic](https://docs.rs/tonic)-based gRPC API, enabling language-agnostic access from Go, Python, or any gRPC-compatible client.
+This crate exposes the gRPC API for the macro traffic simulation via 4-step demand model. It can be used as a Rust library ([crates.io](https://crates.io/crates/macro_traffic_sim)), run as a server binary, and distributed via Docker. Go and Python client stubs can be generated from the same protos.
 
 ## Table of Contents
+- [Prerequisites for building from source](#prerequisites-for-building-from-source)
+- [Build and run (binary)](#build-and-run-binary)
+- [Docker](#docker)
+    - [Build and run locally](#build-and-run-locally)
+    - [Pre-built image from registry](#pre-built-image-from-registry)
+- [Pre-built binaries from GitHub releases page](#pre-built-binaries-from-github-releases-page)
+- [Usage](#usage)
+    - [Run server locally](#run-server-locally)
+    - [Rust client to macro_traffic_sim gRPC server](#rust-client-to-macro_traffic_sim-grpc-server)
+    - [Golang client to macro_traffic_sim gRPC server](#golang-client-to-macro_traffic_sim-grpc-server)
+    - [Python client to macro_traffic_sim gRPC server](#python-client-to-macro_traffic_sim-grpc-server)
+- [Client code generation](#client-code-generation)
+    - [Golang](#golang)
+    - [Python](#python)
 
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Build](#build)
-- [Run](#run)
-- [Environment Variables](#environment-variables)
-- [API Overview](#api-overview)
-- [Usage Example](#usage-example)
-- [Client Code Generation](#client-code-generation)
-- [Related](#related)
+## Prerequisites for building from source
 
-## Features
+- Rust 1.91.0 which is tested with 2024 edition in my case
+- `protoc` available on PATH
+- Optional: `docker` for container builds
 
-- **Session-based** - Create isolated simulation sessions with UUID identifiers
-- **Streaming** - Bidirectional streaming for large networks (nodes, links, zones, OD matrices)
-- **4-step pipeline** - Full trip generation, distribution, mode choice, and traffic assignment
-- **Progress reporting** - Server-side streaming of pipeline execution progress
-- **Multi-period** - Run pipeline for multiple time periods with demand scaling
-- **Results retrieval** - Link volumes, OD matrices, assignment convergence info
+## Build and run (binary)
 
-## Prerequisites
+- Debug build (library mode):
+  - `make build`
+- Run the gRPC server:
+  - `make run-server`
+- Release binary:
+  - `make build-release`
+  - Binary path: `target/release/macro_traffic_sim`
 
-- Rust 1.85+ (edition 2024)
-- Protocol Buffers compiler (`protoc`) for client generation
+Notes:
+- The server is behind a Cargo feature flag `server`. Commands above enable it when needed. Those are basically:
+```sh
+cargo build --release --features server
+```
+- Default listen address is `0.0.0.0:50052`. Override with `MACRO_SIM_ADDR` environment variable (e.g., `MACRO_SIM_ADDR=0.0.0.0:25250`).
+- Session TTL is controlled by `MACRO_SIM_SESSION_TTL` environment variable (default: `600` seconds).
 
-## Build
+## Docker
+
+There are two supported paths: build locally with Dockerfile, or pull from registry.
+
+### Build and run locally
+
+- Build
+  - `make docker-build IMAGE=macro-traffic-sim/server TAG=latest`
+- Run
+  - `make docker-run IMAGE=macro-traffic-sim/server TAG=latest`
+  - This maps host port 50052 -> container port 50052.
+
+The Docker image is built with a multi-stage process (Rust builder + slim runtime). It compiles with the `server` feature enabled.
+
+### Pre-built image from registry
+
+The server image is available from both Docker Hub and GitHub Container Registry.
+
+**Docker Hub:**
+```sh
+docker pull dimahkiin/macro-traffic-sim-server:latest
+docker run --rm -it -p 50052:50052 -e MACRO_SIM_ADDR=0.0.0.0:50052 dimahkiin/macro-traffic-sim-server:latest
+```
+
+**GitHub Container Registry:**
+```sh
+docker pull ghcr.io/lddl/macro-traffic-sim-server:latest
+docker run --rm -it -p 50052:50052 -e MACRO_SIM_ADDR=0.0.0.0:50052 ghcr.io/lddl/macro-traffic-sim-server:latest
+```
+
+Replace `latest` with a specific version tag (e.g., `0.1.0`) for reproducible deployments.
+
+## Pre-built binaries from GitHub releases page
+
+Download pre-built binaries from the [GitHub Releases page](https://github.com/LdDl/macro_traffic_sim_grpc/releases).
+
+Available builds:
+- **Linux (amd64):** `macro-traffic-sim-server-{version}-linux-amd64.tar.gz`
+- **Windows (amd64):** `macro-traffic-sim-server-{version}-windows-amd64.zip`
+
+**Linux example:**
+```sh
+# Download and extract
+wget https://github.com/LdDl/macro_traffic_sim_grpc/releases/download/v0.1.0/macro-traffic-sim-server-0.1.0-linux-amd64.tar.gz
+tar -xzf macro-traffic-sim-server-0.1.0-linux-amd64.tar.gz
+
+# Run the server
+./macro_traffic_sim
+```
+
+**Windows example:**
+```powershell
+# Extract the zip file, then run:
+.\macro_traffic_sim.exe
+```
+
+The server listens on `0.0.0.0:50052` by default. Override with `MACRO_SIM_ADDR` environment variable (e.g., `MACRO_SIM_ADDR=0.0.0.0:25250`). Session TTL: `MACRO_SIM_SESSION_TTL` (default `600` seconds).
+
+## Usage
+
+### Run server locally
+
+E.g. we can run the server in debug mode with:
 
 ```sh
-# Library only (for use as dependency)
-cargo build
-
-# Server binary
-cargo build --features server --release
+cargo run --features server --bin macro_traffic_sim
 ```
 
-## Run
+To use a custom address and session TTL:
+```sh
+MACRO_SIM_ADDR=0.0.0.0:25250 MACRO_SIM_SESSION_TTL=1200 cargo run --features server --bin macro_traffic_sim
+```
+
+### Rust client to macro_traffic_sim gRPC server
+
+Add the crate to your project: `cargo add macro_traffic_sim`
+
+- [API Documentation (docs.rs)](https://docs.rs/macro_traffic_sim)
+- [Example details](./examples/rust_client/README.md)
 
 ```sh
-cargo run --features server --release
+export MACRO_SIM_ADDR=127.0.0.1:50052
+cargo run --example rust_client
 ```
 
-The server starts on `0.0.0.0:50052` by default.
+### Golang client to macro_traffic_sim gRPC server
 
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MACRO_SIM_ADDR` | `0.0.0.0:50052` | gRPC server listen address |
-| `MACRO_SIM_SESSION_TTL` | `600` | Session time-to-live in seconds |
-
-## API Overview
-
-| RPC | Type | Description |
-|-----|------|-------------|
-| `NewSession` | Unary | Create a new simulation session |
-| `InfoSession` | Unary | Get session state and statistics |
-| `DeleteSession` | Unary | Delete a session and free resources |
-| `PushNetwork` | Bidi stream | Load nodes and links (chunks of 10000) |
-| `PushZones` | Bidi stream | Load transport analysis zones |
-| `PushOdMatrix` | Bidi stream | Load OD demand matrix |
-| `SetModelConfig` | Unary | Configure all 4-step model parameters |
-| `RunPipeline` | Server stream | Execute pipeline with progress events |
-| `GetLinkVolumes` | Server stream | Retrieve link volumes for a period |
-| `GetSkimMatrix` | Server stream | Retrieve skim matrix (TODO) |
-| `GetOdResult` | Server stream | Retrieve OD matrix result |
-| `GetAssignmentInfo` | Unary | Get assignment convergence summary |
-
-### Session Lifecycle
-
-```
-1. NewSession()                -> session_id
-2. PushNetwork(nodes, links)   -> network loaded
-3. PushZones(zones)            -> zones loaded
-4. PushOdMatrix(matrix)        -> OD loaded
-5. SetModelConfig(config)      -> configured
-6. RunPipeline()               -> stream progress -> completed
-7. GetLinkVolumes(period)      -> stream volumes
-   GetOdResult(mode)           -> stream OD
-   GetAssignmentInfo(period)   -> convergence info
-8. DeleteSession()             -> cleanup
-```
-
-## Usage Example
-
-See [`examples/rust_client/main.rs`](examples/rust_client/main.rs) for a complete working example.
-
-```rust
-use macro_traffic_sim::pb::macro_service_client::MacroServiceClient;
-use macro_traffic_sim::pb::*;
-use tonic::transport::Channel;
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let channel = Channel::from_static("http://127.0.0.1:50052")
-        .connect()
-        .await?;
-    let mut client = MacroServiceClient::new(channel);
-
-    // Create session
-    let resp = client.new_session(NewSessionRequest {}).await?.into_inner();
-    let sid = resp.session_id.unwrap().value;
-    println!("Session: {}", sid);
-
-    // Push network, zones, OD matrix, configure, run...
-    Ok(())
-}
-```
-
-## Client Code Generation
-
-### Go
+Here more details: [clients/go/README.md](./clients/go/README.md)
 
 ```sh
-protoc --go_out=clients/go --go-grpc_out=clients/go protos/*.proto
+export MACRO_SIM_ADDR=127.0.0.1:50052
+# from repository root
+cd ./clients/go
+go run ./cmd/example/main.go
+```
+
+### Python client to macro_traffic_sim gRPC server
+
+Here more details: [clients/python/README.md](./clients/python/README.md)
+
+```sh
+export MACRO_SIM_ADDR=127.0.0.1:50052
+# from repository root
+cd ./clients/python
+source .venv/bin/activate
+python examples/main.py
+```
+
+## Client code generation
+
+This section describes how I've used to generate client code for different languages from the proto files.
+
+### Golang
+Client code generation for Golang is done via [scripts/gen_go.sh](./scripts/gen_go.sh). It requires `protoc` and `protoc-gen-go` to be installed and available on PATH.
+```sh
+chmod +x ./scripts/gen_go.sh
+./scripts/gen_go.sh clients/go
+cd ./clients/go
+go mod init github.com/LdDl/macro_traffic_sim_grpc/clients/go
+go mod tidy
+cd -
 ```
 
 ### Python
 
+Client code generation for Python is done via [scripts/gen_python.sh](./scripts/gen_python.sh). The script automatically creates a virtual environment and installs all dependencies.
+
 ```sh
-python -m grpc_tools.protoc -Iprotos --python_out=clients/python --grpc_python_out=clients/python protos/*.proto
+chmod +x ./scripts/gen_python.sh
+./scripts/gen_python.sh
 ```
 
-## Related
-
-- [`macro_traffic_sim_core`](https://github.com/LdDl/macro_traffic_sim_core) - Computation engine (4-step demand model)
-- [`micro_traffic_sim_grpc`](https://github.com/LdDl/micro_traffic_sim_grpc) - gRPC interface for microscopic simulation
-- [`micro_traffic_sim_core`](https://github.com/LdDl/micro_traffic_sim_core) - Microscopic simulation engine (cellular automata)
+The script:
+1. Creates `.venv` in `clients/python/` (if not exists)
+2. Installs dependencies from `requirements.txt`
+3. Generates `*_pb2.py`, `*_pb2.pyi` (type stubs), and `*_pb2_grpc.py`
+4. Installs the `macro-traffic-sim` package in editable mode

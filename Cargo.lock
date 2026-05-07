@@ -446,6 +446,8 @@ dependencies = [
 [[package]]
 name = "macro_traffic_sim_core"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ae1281851a03c9026ea6edfbd971f3b5264c3dedd3045cd1341f83b793789f2"
 dependencies = [
  "ordered-float",
  "tracing",

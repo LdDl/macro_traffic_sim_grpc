@@ -1,0 +1,6 @@
+macro_traffic_sim_grpc
+Copyright (c) 2026 Dmitrii Lopanov
+
+This product includes the macro_traffic_sim_grpc crate by Dmitrii Lopanov.
+When used in publications or products, please attribute:
+"Macro Traffic Sim Core by Dmitrii Lopanov (https://github.com/LdDl/macro_traffic_sim_grpc)"

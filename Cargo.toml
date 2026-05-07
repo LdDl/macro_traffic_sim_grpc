@@ -1,0 +1,41 @@
+[package]
+name = "macro_traffic_sim"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+build = "src/build.rs"
+authors = ["Dmitrii Lopanov <sexykdi@gmail.com>"]
+description = "gRPC interface for macroscopic traffic simulation via 4-step demand model"
+license = "Apache-2.0"
+repository = "https://github.com/LdDl/macro_traffic_sim_grpc"
+homepage = "https://github.com/LdDl/macro_traffic_sim_grpc"
+documentation = "https://docs.rs/macro_traffic_sim"
+readme = "README.md"
+keywords = ["traffic", "simulation", "grpc", "transportation", "demand"]
+categories = ["simulation", "science", "api-bindings"]
+
+[dependencies]
+tonic = { version = "0.14.2", features = ["transport"] }
+tonic-prost = "0.14.2"
+prost = "0.14.1"
+prost-types = "0.14.1"
+tokio = { version = "1.40", features = ["macros", "rt-multi-thread", "signal"] }
+tokio-stream = "0.1"
+futures-core = "0.3"
+macro_traffic_sim_core = { path = "../macro_traffic_sim_core" }
+uuid = { version = "1.18.1", features = ["v4"] }
+
+[build-dependencies]
+tonic-prost-build = "0.14.2"
+prost-build = "0.14.1"
+
+[lib]
+name = "macro_traffic_sim"
+path = "src/lib.rs"
+
+[features]
+server = []
+
+[[example]]
+name = "rust_client"
+path = "examples/rust_client/main.rs"

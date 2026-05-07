@@ -1,0 +1,19 @@
+target
+gen
+build.log
+.vscode
+
+# Example output files
+examples/rust_client/output.txt
+*.dat
+
+# Python
+clients/python/.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+clients/python/dist/
+
+# Release binaries
+dist/

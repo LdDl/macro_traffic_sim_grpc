@@ -1,0 +1,49 @@
+# Multi-stage Dockerfile to build and run the macro_traffic_sim gRPC server
+#
+# Build:
+# docker build -f Dockerfile.server -t macro-traffic-sim/server:latest .
+#
+# Run:
+# docker run --rm -it --name macro-traffic-sim-server -p 50052:50052 macro-traffic-sim/server:latest
+#
+# Docker Hub
+# docker tag macro-traffic-sim/server:latest dimahkiin/macro-traffic-sim-server:0.1.0
+# docker tag macro-traffic-sim/server:latest dimahkiin/macro-traffic-sim-server:latest
+# docker push dimahkiin/macro-traffic-sim-server:0.1.0
+# docker push dimahkiin/macro-traffic-sim-server:latest
+
+# GitHub Container Registry
+# docker tag macro-traffic-sim/server:latest ghcr.io/lddl/macro-traffic-sim-server:0.1.0
+# docker tag macro-traffic-sim/server:latest ghcr.io/lddl/macro-traffic-sim-server:latest
+# docker push ghcr.io/lddl/macro-traffic-sim-server:0.1.0
+# docker push ghcr.io/lddl/macro-traffic-sim-server:latest
+
+# Builder
+FROM rust:1.91-alpine AS builder
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache musl-dev protobuf-dev tini-static
+
+# Cache dependency build
+COPY Cargo.toml Cargo.lock ./
+COPY src/build.rs ./src/build.rs
+RUN mkdir -p src && echo "fn main(){}" > src/lib.rs && \
+    cargo fetch && \
+    cargo build --release --features server || true
+
+# Copy sources and build
+COPY src ./src
+COPY protos ./protos
+RUN cargo build --release --features server && \
+    strip target/release/macro_traffic_sim
+
+# Runtime
+FROM scratch
+LABEL org.opencontainers.image.source="https://github.com/LdDl/macro_traffic_sim_grpc"
+LABEL org.opencontainers.image.description="Macroscopic traffic simulation gRPC server"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
+COPY --from=builder /sbin/tini-static /tini
+COPY --from=builder /app/target/release/macro_traffic_sim /macro_traffic_sim
+EXPOSE 50052
+ENTRYPOINT ["/tini", "--", "/macro_traffic_sim"]

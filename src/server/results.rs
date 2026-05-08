@@ -37,8 +37,6 @@ pub async fn get_link_volumes(
 
     let (tx, rx) = mpsc::channel(16);
 
-    let guard = sessions.lock().map_err(|_| Status::internal("storage poisoned"))?;
-    // We need to extract data under the lock, then stream it
     let volumes_data = {
         let mut g = sessions.lock().map_err(|_| Status::internal("storage poisoned"))?;
         g.with_session(&sid, |session| {
@@ -67,7 +65,6 @@ pub async fn get_link_volumes(
             Ok(volumes)
         })
     };
-    drop(guard);
 
     match volumes_data {
         None => return Err(Status::not_found(format!("Session not found: {}", sid))),

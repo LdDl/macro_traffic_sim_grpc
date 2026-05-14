@@ -54,11 +54,17 @@ pub async fn get_link_volumes(
             let result = &session.results[period_index];
             let volumes: Vec<pb::LinkVolume> = result.assignment.link_volumes.iter().map(|(&link_id, &volume)| {
                 let cost = result.assignment.link_costs.get(&link_id).copied().unwrap_or(0.0);
+                let v_over_c = session.network.get_link(link_id)
+                    .map(|link| {
+                        let cap = link.get_total_capacity();
+                        if cap > 0.0 { volume / cap } else { 0.0 }
+                    })
+                    .unwrap_or(0.0);
                 pb::LinkVolume {
                     link_id,
                     volume,
                     travel_time: cost,
-                    v_over_c: 0.0, // Would need capacity info to compute
+                    v_over_c,
                 }
             }).collect();
 

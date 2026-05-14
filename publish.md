@@ -1,9 +1,9 @@
 ## Bump version
 
-Update version in the following files (replace `X.Y.Z` with the new version):
+Update version in the following files (replace `0.1.2` with the new version):
 
-1. **Rust crate:** `Cargo.toml` -> `version = "X.Y.Z"`
-2. **Python client:** `clients/python/pyproject.toml` -> `version = "X.Y.Z"`
+1. **Rust crate:** `Cargo.toml` -> `version = "0.1.2"`
+2. **Python client:** `clients/python/pyproject.toml` -> `version = "0.1.2"`
 3. **Go client:** versioned via git tag (see [Git tags](#git-tags--golang-client-tag-for-pkggodev) section below)
 
 ## Regenerate clients (if proto files changed)
@@ -56,31 +56,31 @@ cd ../..
 docker build -f Dockerfile.server -t macro-traffic-sim/server:latest .
 
 # Tag for Docker Hub
-docker tag macro-traffic-sim/server:latest dimahkiin/macro-traffic-sim-server:X.Y.Z
+docker tag macro-traffic-sim/server:latest dimahkiin/macro-traffic-sim-server:0.1.2
 docker tag macro-traffic-sim/server:latest dimahkiin/macro-traffic-sim-server:latest
 
 # Tag for GitHub Container Registry
-docker tag macro-traffic-sim/server:latest ghcr.io/lddl/macro-traffic-sim-server:X.Y.Z
+docker tag macro-traffic-sim/server:latest ghcr.io/lddl/macro-traffic-sim-server:0.1.2
 docker tag macro-traffic-sim/server:latest ghcr.io/lddl/macro-traffic-sim-server:latest
 
 # Push to Docker Hub
-docker push dimahkiin/macro-traffic-sim-server:X.Y.Z
+docker push dimahkiin/macro-traffic-sim-server:0.1.2
 docker push dimahkiin/macro-traffic-sim-server:latest
 
 # Push to GitHub Container Registry
-docker push ghcr.io/lddl/macro-traffic-sim-server:X.Y.Z
+docker push ghcr.io/lddl/macro-traffic-sim-server:0.1.2
 docker push ghcr.io/lddl/macro-traffic-sim-server:latest
 ```
 
 ## Git tags (+ golang client tag for pkg.go.dev)
 ```bash
 # Main repo tag
-git tag vX.Y.Z
-git push origin vX.Y.Z
+git tag v0.1.2
+git push origin v0.1.2
 
 # Go submodule tag (for pkg.go.dev)
-git tag clients/go/vX.Y.Z
-git push origin clients/go/vX.Y.Z
+git tag clients/go/v0.1.2
+git push origin clients/go/v0.1.2
 ```
 
 ## Verify releases
